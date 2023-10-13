@@ -425,7 +425,7 @@ proc ::scm::proc_doc { name args doc_string body } {
 
     foreach command $commands {
         foreach {cmd args} $command { 
-            if {[llength $result]>0} { append result "\n" }
+            if {[string length $result]>0} { append result "\n" }
             append result [::scm::scm $cmd {*}$args]
         } 
     }
