@@ -13,8 +13,12 @@ create opinioned wrappers to easily remember how use a SCM in
 whatever way I'm suppose to for a client, repo, or project I am 
 working on.
 
-[scm.tcl]
+* [scm.tcl](scm.tcl)
+* [Git Example](examples/git.tcl)
+* [Fossil Example](examples/fossil.tcl)
 
-[examples/git.tcl]
-[examples/fossil.tcl]
+TODO:
+
+* I have a few more areas I would like to imporove the error checking.
+* I need to improve the documentation.
 
