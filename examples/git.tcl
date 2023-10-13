@@ -1,18 +1,18 @@
 #!/usr/bin/env tclsh8.6
 # vim: set syntax=tcl shiftwidth=4 smarttab expandtab:
 package require scm
-package require util
 
 namespace import ::scm::proc_doc ::scm::Log
 
 set default_branch master
+set scm "/usr/bin/git"
 
 if {[info exists env(SCM_LOGLEVEL)]} {
     ::scm::configure -loglevel $env(SCM_LOGLEVEL)
 }
 
 ## configure for git
-::scm::configure -scm git
+::scm::configure -scm $scm
 
 ## configure custom commands
 ::scm::add_commands "up" "update"    "::scm::git_custom" "Update $default_branch branch"
@@ -34,8 +34,8 @@ foreach i {add push commit} {
 ::scm::configure -blockbranchs $default_branch
 
 
-proc_doc ::scm::git_custom { cmd args } { 
-    arguments:
+proc_doc ::scm::git_custom { commands } { 
+    arguments: commands, which is a list of commands in the following format:
       - cmd  - The custom git command we want to run
       - args - The additional arguments to use. 
  
@@ -76,30 +76,37 @@ proc_doc ::scm::git_custom { cmd args } {
         {log            "--oneline --graph"}
     }
 
-    switch -glob -- $cmd {
-        update    { 
-            if {[string compare $current_branch $default_branch]} { 
-                ::scm::scm checkout $default_branch
+    set result ""
+    foreach command $commands {
+        foreach {cmd args} $command {
+            if {[string length $result]>0} {append result "\n"}
+            switch -glob -- $cmd {
+                update    { 
+                    if {[string compare $current_branch $default_branch]} { 
+                        ::scm::scm checkout $default_branch
+                    }
+                    append result [::scm::go $update]
+                    if {[string compare $current_branch $default_branch]} { 
+                        ::scm::scm checkout $current_branch
+                    }
+                }
+                hash      { append result [::scm::go $hash]     }
+                getbranch { append result [::scm::go $branch]   }
+                toplevel  { append result [::scm::go $toplevel] }
+                shortlog  { append result [::scm::go $shortlog] }
+                check     { 
+                    set    command $toplevel
+                    append command $branch
+                    append command $hash
+                    append result [::scm::go $command]
+                }
+                default    {
+                    puts stderr "command $cmd not found"
+                }
             }
-            ::scm::go $update   
-            if {[string compare $current_branch $default_branch]} { 
-                ::scm::scm checkout $current_branch
-            }
-        }
-        hash      { ::scm::go $hash     }
-        getbranch { ::scm::go $branch   }
-        toplevel  { ::scm::go $toplevel }
-        shortlog  { ::scm::go $shortlog }
-        check     { 
-            set    command $toplevel
-            append command $branch
-            append command $hash
-            ::scm::go $command
-        }
-        default    {
-            puts stderr "command $cmd not found"
         }
     }
+    return $result
 }
 
 ## main
@@ -108,6 +115,11 @@ proc_doc ::scm::git_custom { cmd args } {
 ::scm::configure -toplevel [set top_level [::scm::git_custom toplevel]]
 
 # Pop off the first argument. I'm not using - or -- here, but the straight argument.
+if {[llength $argv]==0} {
+    puts stderr "No operation given for [file tail $scm], exiting"
+    exit 1
+}
+
 set opt       [::scm::Pop argv]
 
 # Check if this is a custom command, alias. If it is
@@ -124,7 +136,11 @@ if {[catch {::scm::get_operation $opt} result]} {
     foreach {short cmd opt_proc desc} $result break
 }
 
-if {[catch {eval $opt_proc [list $cmd {*}$argv]} result]} {
+set command [list \
+    [list $cmd $argv] \
+]
+
+if {[catch {eval $opt_proc [list $command]} result]} {
     puts stderr "$result"
     exit 1
 } else {
