@@ -24,8 +24,10 @@ namespace eval ::scm {
             scm                 {}
             blockcmds           {}
             blockbranchs        {}
+            default_branch	{}
             current_branch	{}
             toplevel		{}
+            hash                {}
         }
     }
  
@@ -156,10 +158,12 @@ proc ::scm::proc_doc { name args doc_string body } {
     #                   to run.
     while {[string match -* [set option [lindex $args 0]]]} {
         switch -glob -- $option {
-            -loglevel           { ${log}::setlevel [Pop args 1]}
-            -scm                { set options(scm) [Pop args 1]}
+            -loglevel           { ${log}::setlevel [Pop args 1]           }
+            -scm                { set options(scm) [Pop args 1]           }
+            -default_branch     { set options(default_branch) [Pop args 1]}
             -current_branch     { set options(current_branch) [Pop args 1]}
-            -toplevel           { set options(toplevel) [Pop args 1]}
+            -toplevel           { set options(toplevel) [Pop args 1]      }
+            -hash               { set options(hash) [Pop args 1]          }
             -blockcmds          {
                 set a [Pop args 1]
                 # We don't want to add duplicates.

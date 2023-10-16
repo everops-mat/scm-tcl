@@ -5,6 +5,11 @@ package require scm
 namespace import ::scm::proc_doc ::scm::Log
 
 set default_branch master
+if {[info exists env(SCM_DEFAULT_BRANCH)]} {
+    set default_branch $env(SCM_DEFAULT_BRANCH)
+}
+::scm::configure -default_branch $default_branch
+
 set scm "/usr/bin/git"
 
 if {[info exists env(SCM_LOGLEVEL)]} {
@@ -51,10 +56,10 @@ proc_doc ::scm::git_custom { commands } {
    While this is defined in our application, we are using the proc_doc from 
    the ::scm module, we need add the procdure to that namespace.
 } { 
-    variable default_branch 
-    variable current_branch 
-    variable top_level
-   
+    set default_branch [::scm::optionget -default_branch]
+    set current_branch [::scm::optionget -current_branch]
+    set top_level      [::scm::optionget -toplevel      ]
+
     set update {
         {"fetch"        "--all -p -t"}
         {"pull"         ""}
@@ -111,8 +116,9 @@ proc_doc ::scm::git_custom { commands } {
 
 ## main
 
-::scm::configure -current_branch [set current_branch [::scm::git_custom getbranch]]
-::scm::configure -toplevel [set top_level [::scm::git_custom toplevel]]
+::scm::configure -current_branch [::scm::git_custom getbranch]
+::scm::configure -toplevel       [::scm::git_custom toplevel ]
+::scm::configure -hash           [::scm::git_custom hash     ]
 
 # Pop off the first argument. I'm not using - or -- here, but the straight argument.
 if {[llength $argv]==0} {
@@ -136,10 +142,15 @@ if {[catch {::scm::get_operation $opt} result]} {
     foreach {short cmd opt_proc desc} $result break
 }
 
+## When calling our procedures, we need to accept a list of commands, which 
+## is a list of {cmd args}. While this can get a bit confusing, it also means
+## that any procedure we use can run MULTIPLE commands and return 
+## the output.
 set command [list \
     [list $cmd $argv] \
 ]
 
+## This is where the magic happens
 if {[catch {eval $opt_proc [list $command]} result]} {
     puts stderr "$result"
     exit 1

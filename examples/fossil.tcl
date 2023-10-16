@@ -5,17 +5,21 @@ package require scm
 namespace import ::scm::proc_doc ::scm::Log
 
 set default_branch trunk
-set scm            "/usr/bin/fossil"
+if {[info exists env(SCM_DEFAULT_BRANCH)]} {
+    set default_branch $env(SCM_DEFAULT_BRANCH)
+}
+::scm::configure -default_branch $default_branch
 
 if {[info exists env(SCM_LOGLEVEL)]} {
     ::scm::configure -loglevel $env(SCM_LOGLEVEL)
 }
 
-## configure for git
-::scm::configure -scm fossil
+## configure scm
+set scm            "/usr/bin/fossil"
+::scm::configure -scm $scm
 
 ## configure custom commands
-::scm::add_commands "br" "getbranch"   "::scm::fossil_custom" "Get hash of git repo"
+::scm::add_commands "br" "getbranch"   "::scm::fossil_custom" "Get hash of fossil repo"
 ::scm::add_commands "tl" "toplevel"    "::scm::fossil_custom" "Get top level directory"
 
 ## configure aliases
@@ -34,10 +38,10 @@ foreach i {add push commit} {
 proc_doc ::scm::fossil_custom { commands } { 
     arguments: commands
     Where commands are a list of commands in the following format:
-      - cmd  - The custom git command we want to run
+      - cmd  - The custom fossil command we want to run
       - args - The additional arguments to use. 
  
-    This will run the custom git commands that we create. Typically we don't
+    This will run the custom fossil commands that we create. Typically we don't
     give additional arguments to custom commands. Although you might. If you so 
     so you have to add that arguments we want to add.
     
@@ -87,9 +91,9 @@ foreach line [split [::scm::scm {status}] "\n"] {
         }
     }
 }
-::scm::configure -current_branch [set current_branch \
-   [::scm::fossil_custom getbranch]]
-::scm::configure -toplevel $toplevel
+::scm::configure -current_branch [::scm::fossil_custom getbranch]
+::scm::configure -toplevel       $toplevel
+::scm::configure -hash           $hash
 
 if {[llength $argv]==0} {
     puts "No operation for [file tail $scm] given, exiting"
@@ -104,7 +108,7 @@ set opt       [::scm::Pop argv]
 # If if it IS a custom command, run that custom procudure.
 # Another note:
 #     This means you can have command that have nothing to do with 
-#     git if you wish. You could, say, create a custom funtion that 
+#     fossil if you wish. You could, say, create a custom funtion that 
 #     might trigger a build, run make, etc.
 if {[catch {::scm::get_operation $opt} result]} {
     set cmd $result; set opt_proc "::scm::go"
