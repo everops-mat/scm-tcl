@@ -189,7 +189,8 @@ proc ::scm::proc_doc { name args doc_string body } {
                 set failed 1
                 set msg "unknown option: \"$option\":\
                    must be one of -loglevel, -scm,\
-                    -blockbranch, -blockedcmds"
+                    -blockbranch, -blockedcmds, -default_branch,\
+                    -current_branch, -toplevel, -url"
                 if {$failed} {
                     return -code error $msg
                 }
