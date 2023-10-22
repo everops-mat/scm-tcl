@@ -28,6 +28,7 @@ namespace eval ::scm {
             current_branch	{}
             toplevel		{}
             hash                {}
+	    url			{}
         }
     }
  
@@ -164,6 +165,7 @@ proc ::scm::proc_doc { name args doc_string body } {
             -current_branch     { set options(current_branch) [Pop args 1]}
             -toplevel           { set options(toplevel) [Pop args 1]      }
             -hash               { set options(hash) [Pop args 1]          }
+            -url                { set options(url) [Pop args 1]          }
             -blockcmds          {
                 set a [Pop args 1]
                 # We don't want to add duplicates.
